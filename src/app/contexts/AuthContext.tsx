@@ -29,6 +29,7 @@ interface AuthContextType {
   setUserNickname: React.Dispatch<React.SetStateAction<string | null>>;
   updateNickname: (newNickname: string) => Promise<void>;
   accessLevel: number;
+  userEmail: string | null;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -42,6 +43,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const [userNickname, setUserNickname] = useState<string | null>(null);
   const [accessLevel, setAccessLevel] = useState<number>(0);
+  const [userEmail, setUserEmail] = useState<string | null>(null);
   const router = useRouter();
 
   useEffect(() => {
@@ -49,18 +51,32 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setUser(authUser);
       setAccessLevel(0);
       if (authUser) {
+        setUserEmail(authUser.email || null);
         const userDocRef = doc(db, "users", authUser.uid);
         const docSnap = await getDoc(userDocRef);
         if (docSnap.exists()) {
           setUserNickname(docSnap.data()?.nickname || null);
           setAccessLevel(docSnap.data()?.accessLevel || 0);
+          // Verifica se o email está salvo e salva se não estiver
+          if (!docSnap.data()?.email && authUser.email) {
+            await setDoc(
+              userDocRef,
+              { email: authUser.email },
+              { merge: true }
+            );
+          }
         } else {
           setUserNickname(null);
           setAccessLevel(0);
-          await setDoc(userDocRef, { nickname: null, accessLevel: 0 });
+          await setDoc(userDocRef, {
+            nickname: null,
+            accessLevel: 0,
+            email: authUser.email || null,
+          });
         }
       } else {
         setUserNickname(null);
+        setUserEmail(null);
       }
       setLoading(false);
     });
@@ -69,41 +85,51 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   }, []);
 
   const signInWithGoogle = async () => {
-    setLoading(true); // Define loading como true ANTES do popup
+    setLoading(true);
     const provider = new GoogleAuthProvider();
     try {
       await auth.signOut();
       const result = await signInWithPopup(auth, provider);
       const user = result.user;
+      setUserEmail(user.email || null);
 
       const userDocRef = doc(db, "users", user.uid);
       const docSnap = await getDoc(userDocRef);
 
       if (!docSnap.exists()) {
         router.push("/set-nickname");
+        await setDoc(userDocRef, {
+          nickname: null,
+          accessLevel: 0,
+          email: user.email || null,
+        });
       } else {
         setUserNickname(docSnap.data()?.nickname || null);
         setAccessLevel(docSnap.data()?.accessLevel || 0);
+        // Verifica se o email está salvo e salva se não estiver
+        if (!docSnap.data()?.email && user.email) {
+          await setDoc(userDocRef, { email: user.email }, { merge: true });
+        }
       }
     } catch (error) {
       console.error("Error signing in with Google:", error);
     } finally {
-      setLoading(false); // Define loading como false APÓS a conclusão (sucesso ou falha)
+      setLoading(false);
     }
   };
 
   const signOutHandler = useCallback(async () => {
-    setLoading(true); // Define loading como true ANTES do logout
+    setLoading(true);
     try {
       await firebaseSignOut(auth);
       setUserNickname(null);
       setAccessLevel(0);
-      // Recarrega a página após o logout
+      setUserEmail(null);
       window.location.reload();
     } catch (error) {
       console.error("Error signing out:", error);
     } finally {
-      setLoading(false); // Define loading como false APÓS a conclusão (sucesso ou falha)
+      setLoading(false);
     }
   }, []);
 
@@ -133,6 +159,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     setUserNickname,
     updateNickname,
     accessLevel,
+    userEmail,
   };
 
   return (
@@ -146,16 +173,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             left: 0,
             width: "100%",
             height: "100%",
-            backgroundColor: "rgba(255, 255, 255, 0.8)", // Fundo semitransparente
+            backgroundColor: "rgba(255, 255, 255, 0.8)",
             display: "flex",
             justifyContent: "center",
             alignItems: "center",
-            zIndex: 1000, // Certifique-se de que esteja acima de outros elementos
+            zIndex: 1000,
           }}
         >
-          {/* Adicione aqui seu indicador de carregamento (spinner, texto, etc.) */}
           <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-gray-700"></div>
-          {/* Você pode estilizar isso com Tailwind CSS ou CSS customizado */}
         </div>
       )}
     </AuthContext.Provider>
