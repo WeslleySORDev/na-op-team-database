@@ -9,8 +9,12 @@ import { Footer } from "@/app/components/layout/Footer";
 import { Tabs } from "@/app/components/ui/Tabs";
 import { Input } from "@/app/components/ui/Input";
 import { TeamList } from "@/app/components/teams/TeamList";
+import { useAuth } from "./contexts/AuthContext";
+import { useRouter } from "next/navigation";
 
 export default function HomePage() {
+  const router = useRouter();
+  const { user, userNickname, loading } = useAuth();
   const { teams } = useTeams();
   const [activeTab, setActiveTab] = useState<"all" | "quick" | "ladder">("all");
   const [missionFilter, setMissionFilter] = useState("");
@@ -73,7 +77,13 @@ export default function HomePage() {
       ),
     },
   ];
-
+  useEffect(() => {
+    if (!loading) {
+      if (user && !userNickname) {
+        router.push("/set-nickname");
+      }
+    }
+  }, [user, userNickname, loading, router]);
   return (
     <div className="flex flex-col min-h-screen bg-gray-50 text-gray-800">
       <Header />

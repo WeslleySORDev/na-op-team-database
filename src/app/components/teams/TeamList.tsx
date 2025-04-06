@@ -1,7 +1,6 @@
 import { PlusCircle } from "lucide-react";
 import type { Team } from "@/types/team";
 import { TeamCard } from "@/app/components/teams/TeamCard";
-import { Button } from "@/app/components/ui/Button";
 
 type TeamListProps = {
   teams: Team[];
@@ -23,12 +22,6 @@ export function TeamList({
         <h3 className="text-xl font-medium mb-2 text-gray-800">
           Nenhum time encontrado
         </h3>
-        <p className="text-gray-500 mb-6">
-          Comece criando seu primeiro time de ninjas!
-        </p>
-        <Button href="/create-team" variant="primary">
-          Criar Primeiro Time
-        </Button>
       </div>
     );
   }

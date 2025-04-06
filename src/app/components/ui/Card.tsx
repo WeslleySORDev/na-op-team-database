@@ -33,7 +33,7 @@ export function CardContent({ children, className }: CardProps) {
 
 export function CardFooter({ children, className }: CardProps) {
   return (
-    <div className={cn("p-4 mt-auto bg-gray-50 border-t border-gray-100", className)}>
+    <div className={cn("p-4 mt-auto", className)}>
       {children}
     </div>
   );

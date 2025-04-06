@@ -1,8 +1,13 @@
+"use client";
+
 import Image from "next/image";
 import { Eye } from "lucide-react";
 import type { Team } from "@/types/team";
 import { Card, CardContent, CardFooter } from "@/app/components/ui/Card";
 import { Button } from "@/app/components/ui/Button";
+import { useEffect, useState } from "react";
+import { doc, getDoc } from "firebase/firestore";
+import { db } from "@/app/config/firebase";
 
 type TeamCardProps = {
   team: Team;
@@ -10,6 +15,38 @@ type TeamCardProps = {
 };
 
 export function TeamCard({ team, characterImages }: TeamCardProps) {
+  const [creatorNickname, setCreatorNickname] = useState<string | null>(null);
+  const [loadingCreatorNickname, setLoadingCreatorNickname] = useState(true);
+
+  useEffect(() => {
+    if (team.uid) {
+      const fetchCreatorNickname = async () => {
+        setLoadingCreatorNickname(true);
+        try {
+          const userDocRef = doc(db, "users", team.uid);
+          const docSnap = await getDoc(userDocRef);
+          if (docSnap.exists()) {
+            setCreatorNickname(
+              docSnap.data()?.nickname || "Usuário Desconhecido"
+            );
+          } else {
+            setCreatorNickname("Usuário Desconhecido");
+          }
+        } catch (error) {
+          console.error("Erro ao buscar nickname do criador:", error);
+          setCreatorNickname("Erro ao Carregar");
+        } finally {
+          setLoadingCreatorNickname(false);
+        }
+      };
+
+      fetchCreatorNickname();
+    } else {
+      setLoadingCreatorNickname(false);
+      setCreatorNickname(null);
+    }
+  }, [team.uid]);
+
   function formatMillisecondsTimestampToDDMMYYYY(milliseconds: number) {
     const date = new Date(milliseconds);
     const day = date.getDate().toString().padStart(2, "0");
@@ -18,6 +55,7 @@ export function TeamCard({ team, characterImages }: TeamCardProps) {
 
     return `${day}/${month}/${year}`;
   }
+
   return (
     <Card className="hover:shadow-lg transition-shadow">
       <CardContent>
@@ -36,7 +74,18 @@ export function TeamCard({ team, characterImages }: TeamCardProps) {
               {team.type === "ladder" ? "Ladder" : "Quick Game"}
             </span>
           </div>
-          <h3 className="text-sm font-bold">{formatMillisecondsTimestampToDDMMYYYY(team.createdAt)}</h3>
+          <div className="flex flex-col gap-1">
+            {team.uid && (
+              <h4 className="text-sm font-bold">
+                Criador:{" "}
+                {loadingCreatorNickname ? "Carregando..." : creatorNickname}
+              </h4>
+            )}
+            <h4 className="text-sm font-bold">
+              Data de criação:{" "}
+              {formatMillisecondsTimestampToDDMMYYYY(team.createdAt)}
+            </h4>
+          </div>
         </div>
         <div className="flex justify-center space-x-2 my-4">
           {team.characters.map((charName, index) => (

@@ -8,13 +8,14 @@ import {
   getDocs,
   deleteDoc,
   onSnapshot,
+  Timestamp,
 } from "firebase/firestore";
-import { db } from "@/app/config/firebase";
+import { db, auth } from "@/app/config/firebase"; // Importe a instância de autenticação
 import { Team } from "@/types/team";
 
 interface TeamsContextType {
   teams: Team[];
-  addTeam: (team: Omit<Team, "id" | "createdAt">) => Promise<void>;
+  addTeam: (team: Omit<Team, "id" | "createdAt" | "uid">) => Promise<void>; // Remova "uid" de Omit
   updateTeam: (
     id: string,
     updatedTeam: Omit<Team, "id" | "createdAt">
@@ -45,19 +46,26 @@ export const TeamsProvider: React.FC<React.PropsWithChildren> = ({
     return () => unsubscribe();
   }, []);
 
-  const addTeam = async (teamData: Omit<Team, "id" | "createdAt">) => {
+  const addTeam = async (teamData: Omit<Team, "id" | "createdAt" | "uid">) => {
+    if (!auth.currentUser?.uid) {
+      console.error("Usuário não autenticado ao tentar criar um time.");
+      return;
+    }
+    const newTeamDocRef = doc(teamsCollectionRef);
     const newTeam: Team = {
-      id: doc(teamsCollectionRef).id,
+      id: newTeamDocRef.id,
       ...teamData,
       createdAt: Date.now(),
+      uid: auth.currentUser.uid, // Salva o UID do usuário logado
     };
-    await setDoc(doc(teamsCollectionRef, newTeam.id), {
+    await setDoc(newTeamDocRef, {
       name: newTeam.name,
       description: newTeam.description,
       type: newTeam.type,
       missions: newTeam.missions,
       characters: newTeam.characters,
-      createdAt: newTeam.createdAt ? new Date(newTeam.createdAt) : new Date(),
+      createdAt: Timestamp.now(), // Use Timestamp para melhor compatibilidade com Firestore
+      uid: newTeam.uid,
     });
   };
 

@@ -6,4 +6,5 @@ export type Team = {
   missions?: string[];
   characters: string[];
   createdAt: number;
+  uid: string;
 };
