@@ -23,7 +23,7 @@ export function Header({
               Voltar
             </Button>
           )}
-          <h1 className="text-2xl font-bold">OP Helper</h1>
+          <h1 className="text-2xl font-bold">OP Team Database</h1>
         </div>
 
         {rightContent ? (
