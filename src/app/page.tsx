@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { Search, X } from "lucide-react";
-import type { Team } from "@/types/team";
+import { useTeams } from "./contexts/TeamsContext";
 import { CHARACTERS } from "@/data/characters";
 import { Header } from "@/app/components/layout/Header";
 import { Footer } from "@/app/components/layout/Footer";
@@ -11,27 +11,10 @@ import { Input } from "@/app/components/ui/Input";
 import { TeamList } from "@/app/components/teams/TeamList";
 
 export default function HomePage() {
-  const [teams, setTeams] = useState<Team[]>([]);
+  const { teams } = useTeams();
   const [activeTab, setActiveTab] = useState<"all" | "quick" | "ladder">("all");
   const [missionFilter, setMissionFilter] = useState("");
-  const [filteredMissions, setFilteredMissions] = useState<string[]>([]);
 
-  // Carregar times do localStorage quando o componente montar
-  useEffect(() => {
-    const savedTeams = localStorage.getItem("naruto-teams");
-    if (savedTeams) {
-      const parsedTeams = JSON.parse(savedTeams);
-      // Garantir que times antigos tenham o campo type e missions
-      const updatedTeams = parsedTeams.map((team: any) => ({
-        ...team,
-        type: team.type || "quick", // Valor padrão para times antigos
-        missions: team.missions || [], // Valor padrão para times antigos
-      }));
-      setTeams(updatedTeams);
-    }
-  }, []);
-
-  // Função para encontrar a URL da imagem do personagem pelo nome
   const getCharacterImages = () => {
     const images: Record<string, string> = {};
     CHARACTERS.forEach((char) => {
@@ -40,31 +23,13 @@ export default function HomePage() {
     return images;
   };
 
-  // Extrair todas as missões únicas dos times
-  useEffect(() => {
-    const allMissions = teams
-      .filter(
-        (team) =>
-          team.type === "quick" && team.missions && team.missions.length > 0
-      )
-      .flatMap((team) => team.missions || []);
-
-    const uniqueMissions = [...new Set(allMissions)];
-    setFilteredMissions(uniqueMissions);
-  }, [teams]);
-
-  // Filtrar times com base na aba ativa e no filtro de missão
   const filteredTeams = teams.filter((team) => {
-    // Filtro por tipo (aba)
     if (activeTab !== "all" && team.type !== activeTab) return false;
-
-    // Filtro por missão (apenas para quick game)
     if (activeTab === "quick" && missionFilter && team.missions) {
       return team.missions.some((mission) =>
         mission.toLowerCase().includes(missionFilter.toLowerCase())
       );
     }
-
     return true;
   });
 

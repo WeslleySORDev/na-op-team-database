@@ -12,49 +12,40 @@ import { Footer } from "@/app/components/layout/Footer";
 import { Card, CardContent } from "@/app/components/ui/Card";
 import { Button } from "@/app/components/ui/Button";
 import { Tabs } from "@/app/components/ui/Tabs";
+import { useTeams } from "@/app/contexts/TeamsContext"; // Importe o hook do contexto
 
 export default function TeamDetailsPage() {
   const router = useRouter();
   const params = useParams();
   const teamId = params.id as string;
+  const { teams, deleteTeam } = useTeams(); // Use o contexto
 
   const [team, setTeam] = useState<Team | null>(null);
   const [activeCharacter, setActiveCharacter] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
-  // Carregar time do localStorage quando o componente montar
   useEffect(() => {
-    const savedTeams = localStorage.getItem("naruto-teams");
-    if (savedTeams) {
-      const teams = JSON.parse(savedTeams);
-      const foundTeam = teams.find((t: Team) => t.id === teamId);
-      if (foundTeam) {
-        // Garantir que times antigos tenham os novos campos
-        const updatedTeam = {
-          ...foundTeam,
-          type: foundTeam.type || "quick", // Valor padrão para times antigos
-          description: foundTeam.description || "", // Valor padrão para times antigos
-          missions: foundTeam.missions || [], // Valor padrão para times antigos
-        };
-        setTeam(updatedTeam);
-        setActiveCharacter(updatedTeam.characters[0]);
-      } else {
-        // Time não encontrado, redirecionar para a página inicial
-        router.push("/");
-      }
+    const foundTeam = teams.find((t) => t.id === teamId);
+    if (foundTeam) {
+      setTeam(foundTeam);
+      setActiveCharacter(foundTeam.characters[0] || null);
+      setIsLoading(false);
     } else {
-      // Nenhum time salvo, redirecionar para a página inicial
+      setIsLoading(false);
       router.push("/");
     }
-  }, [teamId, router]);
+  }, [teamId, teams, router]);
 
-  const handleDeleteTeam = () => {
-    if (confirm("Tem certeza que deseja excluir este time?")) {
-      const savedTeams = localStorage.getItem("naruto-teams");
-      if (savedTeams) {
-        const teams = JSON.parse(savedTeams);
-        const updatedTeams = teams.filter((t: Team) => t.id !== teamId);
-        localStorage.setItem("naruto-teams", JSON.stringify(updatedTeams));
+  const handleDeleteTeam = async () => {
+    if (team && confirm("Tem certeza que deseja excluir este time?")) {
+      setIsLoading(true);
+      try {
+        await deleteTeam(teamId);
         router.push("/");
+      } catch (error) {
+        console.error("Erro ao excluir o time:", error);
+        alert("Ocorreu um erro ao excluir o time.");
+        setIsLoading(false);
       }
     }
   };
@@ -64,10 +55,18 @@ export default function TeamDetailsPage() {
     (char) => char.name === activeCharacter
   );
 
-  if (!team) {
+  if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50 text-gray-800 flex items-center justify-center">
         <p>Carregando...</p>
+      </div>
+    );
+  }
+
+  if (!team) {
+    return (
+      <div className="min-h-screen bg-gray-50 text-gray-800 flex items-center justify-center">
+        <p>Time não encontrado.</p>
       </div>
     );
   }
@@ -78,6 +77,7 @@ export default function TeamDetailsPage() {
         className="cursor-pointer"
         variant="secondary"
         onClick={handleDeleteTeam}
+        disabled={isLoading}
       >
         <Trash className="mr-2 h-4 w-4" />
         Excluir Time

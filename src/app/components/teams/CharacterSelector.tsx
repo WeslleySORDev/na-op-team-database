@@ -28,9 +28,9 @@ export function CharacterSelector({
               <Image
                 src={character.url || "/placeholder.svg"}
                 alt={character.name}
-                fill
+                width={75}
+                height={75}
                 className="object-cover"
-                style={{ objectFit: "cover" }}
               />
             </div>
             {isSelected && (

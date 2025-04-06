@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { X } from "lucide-react";
@@ -13,24 +13,24 @@ import { Textarea } from "@/app/components/ui/Textarea";
 import { Button } from "@/app/components/ui/Button";
 import { CharacterSelector } from "@/app/components/teams/CharacterSelector";
 import { MissionSelector } from "@/app/components/teams/MissionSelector";
+import { useTeams } from "@/app/contexts/TeamsContext"; // Importe o hook do contexto
 
 export default function CreateTeamPage() {
   const router = useRouter();
+  const { addTeam } = useTeams(); // Use a função addTeam do contexto
   const [teamName, setTeamName] = useState("");
   const [teamDescription, setTeamDescription] = useState("");
-  const [teamType, setTeamType] = useState("quick"); // "quick" ou "ladder"
+  const [teamType, setTeamType] = useState<"quick" | "ladder">("quick");
   const [selectedMissions, setSelectedMissions] = useState<string[]>([]);
   const [selectedCharacters, setSelectedCharacters] = useState<string[]>([]);
+  const [isSaving, setIsSaving] = useState(false);
 
   const handleCharacterSelect = (characterName: string) => {
-    // Se o personagem já está selecionado, remova-o
     if (selectedCharacters.includes(characterName)) {
       setSelectedCharacters(
         selectedCharacters.filter((name) => name !== characterName)
       );
-    }
-    // Se não está selecionado e ainda não temos 3 personagens, adicione-o
-    else if (selectedCharacters.length < 3) {
+    } else if (selectedCharacters.length < 3) {
       setSelectedCharacters([...selectedCharacters, characterName]);
     }
   };
@@ -45,7 +45,8 @@ export default function CreateTeamPage() {
     setSelectedMissions(selectedMissions.filter((m) => m !== mission));
   };
 
-  const handleSaveTeam = () => {
+  const handleSaveTeam = async (event: FormEvent) => {
+    event.preventDefault(); // Prevent default form submission
     if (!teamName.trim()) {
       alert("Por favor, dê um nome ao seu time!");
       return;
@@ -61,24 +62,22 @@ export default function CreateTeamPage() {
       return;
     }
 
-    // Criar novo time com os campos adicionais
-    const newTeam = {
-      id: Date.now().toString(),
-      name: teamName,
-      description: teamDescription,
-      type: teamType,
-      missions: teamType === "quick" ? selectedMissions : [],
-      characters: selectedCharacters,
-      createdAt: Date.now(),
-    };
-
-    // Salvar no localStorage
-    const savedTeams = localStorage.getItem("naruto-teams");
-    const teams = savedTeams ? JSON.parse(savedTeams) : [];
-    localStorage.setItem("naruto-teams", JSON.stringify([...teams, newTeam]));
-
-    // Redirecionar para a página inicial
-    router.push("/");
+    setIsSaving(true);
+    try {
+      await addTeam({
+        name: teamName,
+        description: teamDescription,
+        type: teamType,
+        missions: teamType === "quick" ? selectedMissions : [],
+        characters: selectedCharacters,
+      });
+      router.push("/");
+    } catch (error) {
+      console.error("Erro ao salvar o time:", error);
+      alert("Ocorreu um erro ao salvar o time.");
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -103,13 +102,14 @@ export default function CreateTeamPage() {
                   Seu Time
                 </h3>
 
-                <div className="space-y-4">
+                <form onSubmit={handleSaveTeam} className="space-y-4">
                   <Input
                     id="team-name"
                     label="Nome do Time*"
                     value={teamName}
                     onChange={(e) => setTeamName(e.target.value)}
                     placeholder="Digite o nome do time"
+                    required
                   />
 
                   <Textarea
@@ -190,6 +190,7 @@ export default function CreateTeamPage() {
                                 />
                               </div>
                               <button
+                                type="button"
                                 onClick={() => handleCharacterSelect(charName)}
                                 className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center hover:bg-red-600 z-10"
                               >
@@ -203,17 +204,18 @@ export default function CreateTeamPage() {
                   </div>
 
                   <Button
-                    onClick={handleSaveTeam}
+                    type="submit"
                     disabled={
+                      isSaving ||
                       selectedCharacters.length !== 3 ||
                       !teamName.trim() ||
                       (teamType === "quick" && selectedMissions.length === 0)
                     }
                     className="w-full"
                   >
-                    Salvar Time
+                    {isSaving ? "Salvando..." : "Salvar Time"}
                   </Button>
-                </div>
+                </form>
               </CardContent>
             </Card>
           </div>
