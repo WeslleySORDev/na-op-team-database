@@ -10,7 +10,7 @@ export function Card({ children, className }: CardProps) {
   return (
     <div
       className={cn(
-        "bg-white border border-gray-100 rounded-xl overflow-hidden shadow-md",
+        "flex flex-col bg-white border border-gray-100 rounded-xl overflow-hidden shadow-md",
         className
       )}
     >
@@ -33,7 +33,7 @@ export function CardContent({ children, className }: CardProps) {
 
 export function CardFooter({ children, className }: CardProps) {
   return (
-    <div className={cn("p-4 bg-gray-50 border-t border-gray-100", className)}>
+    <div className={cn("p-4 mt-auto bg-gray-50 border-t border-gray-100", className)}>
       {children}
     </div>
   );
