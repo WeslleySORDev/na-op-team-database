@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Roboto } from "next/font/google";
 import "./globals.css";
 import { TeamsProvider } from "./contexts/TeamsContext";
+import { AuthProvider } from "./contexts/AuthContext";
 
 const roboto = Roboto({
   variable: "--font-roboto-sans",
@@ -22,7 +23,9 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${roboto.variable} antialiased`}>
-        <TeamsProvider>{children}</TeamsProvider>
+        <AuthProvider>
+          <TeamsProvider>{children}</TeamsProvider>
+        </AuthProvider>
       </body>
     </html>
   );
