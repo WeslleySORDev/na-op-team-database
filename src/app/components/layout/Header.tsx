@@ -7,7 +7,7 @@ import Image from "next/image";
 import { useState, useRef, useEffect } from "react";
 
 export function Header() {
-  const { user, signOut, signInWithGoogleRedirect, userNickname } = useAuth();
+  const { user, signOut, signInWithGoogle, userNickname } = useAuth();
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
 
@@ -87,7 +87,7 @@ export function Header() {
               )}
             </div>
           ) : (
-            <Button onClick={signInWithGoogleRedirect} variant="secondary">
+            <Button onClick={signInWithGoogle} variant="secondary">
               <User className="mr-2 h-4 w-4" />
               Login com Google
             </Button>
